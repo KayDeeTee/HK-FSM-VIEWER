@@ -1,1 +1,55 @@
+body{
+    color: #F8F8F2;
+    background: #272822;
+    font-family: Helvetica;
+}
 
+.fsmBox{
+    display: flex;
+    justify-content:center;
+    align-content:center;align-items: center;
+    justify-content: center;
+    flex-direction:column;
+    position: absolute;
+    background: #49483E;
+}
+
+#info_head{
+    background: #cdcdcd;
+    color: #111;
+    font-size: 20;
+    font-weight: bold;  
+}
+
+#info_actions_title, #info_transitions_title{
+    background: #ababab;
+    color: #222;
+    font-size: 16;
+    font-weight: bold;
+}
+
+#info{
+    z-index: 999;
+    position: fixed;
+    top: 0px;
+    right: 0px;
+    width: 450px;
+    background: #111;
+    font-size: 12;
+}
+
+.bool{
+    color: #AE81FF
+}
+
+.function{
+    color: #A6E22E
+}
+
+.literal{
+    color: #FFE792
+}
+
+.variable{
+    color: #66D9EF
+}
