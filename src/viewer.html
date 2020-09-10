@@ -43,15 +43,19 @@ function byteArrayToBool(byteArray) {
 }
 
 function byteArrayToFloat(byteArray) {
-    byteArray = byteArray.reverse()
-    var buf = new ArrayBuffer(byteArray.length);
+    var buf = new ArrayBuffer(4);
     var view = new DataView(buf);
 
-    byteArray.forEach(function (b, i) {
-        view.setUint8(i, b);
-    });
+    for (var i = 0; i < 4; i++) {
+      if(i >= byteArray.length){
+        break;
+      }
+
+      view.setUint8(3 - i, byteArray[i]);
+    }
 
     var value = view.getFloat32(0);
+    value = Math.round((value + Number.EPSILON) * 10000) / 10000
     return "<span class='literal'>" + value + "</span>";
 };
 
@@ -160,8 +164,7 @@ function updateInfo(str){
                     param_read++;
                     break;
                 case 15:
-                    string += getAsciiString(byteData, paramDataPos[param_read],paramByteDataSize[param_read]);
-                    //string += byteArrayToFloat( byteData.slice(paramDataPos[param_read], paramDataPos[param_read]+paramByteDataSize[param_read]) )
+                    string += byteArrayToFloat( byteData.slice(paramDataPos[param_read], paramDataPos[param_read]+paramByteDataSize[param_read]) )
                     param_read++;
                     break;
                 case 16:
