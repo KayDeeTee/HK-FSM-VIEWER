@@ -1,10 +1,9 @@
-<!-- PlayMakerFSM viewer by KDT -->
-<!-- For Questions and improvements go to #modding on the HK discord https://discord.gg/AVjhmmy -->
-
+<!--suppress JSUnresolvedVariable, JSUnresolvedVariable -->
 <head>
-    <script type="text/javascript" language="javascript" src="main.js"></script> 
-    <script type="text/javascript" language="javascript" src="data.json"></script> 
+    <meta charset="utf-8"/>
+    <script type="text/javascript" src="data.json"></script>
     <link rel="stylesheet" type="text/css" href="main.css">
+    <title>Hollow Knight FSM Viewer</title>
 </head>
 
 <body>
@@ -20,303 +19,249 @@
 </body>
 
 <script type="text/javascript">
-var infohead = document.getElementById("info_head");
-var info_transitions = document.getElementById("info_transitions");
-var info_actions = document.getElementById("info_actions");
-var info_parameters = document.getElementById("info_parameters");
+    const infohead = document.getElementById("info_head")
+    const info_transitions = document.getElementById("info_transitions")
+    const info_actions = document.getElementById("info_actions")
+    const info_parameters = document.getElementById("info_parameters")
 
-function getMethod(method){
-    ret = method.split('.');
-    return "<span class='function'>" + ret[ret.length-1] + "</span>";
-}
-
-function getString(str_params, str_read){
-    if( str_params[str_read].useVariable ){
-        return "<span class='variable'>" + str_params[str_read].name + "</span>";
-    } else {
-        return "<span class='literal'>" + str_params[str_read].value + "</span>";
-    }
-}
-
-function byteArrayToBool(byteArray) {
-    return "<span class='bool'>" + (byteArray[0] > 0).toString().toUpperCase() + "</span>";
-}
-
-function byteArrayToFloat(byteArray) {
-    var buf = new ArrayBuffer(4);
-    var view = new DataView(buf);
-
-    for (var i = 0; i < 4; i++) {
-      if(i >= byteArray.length){
-        break;
-      }
-
-      view.setUint8(3 - i, byteArray[i]);
+    function getMethod(method) {
+        const ret = method.split('.')
+        return "<span class='function'>" + ret[ret.length - 1] + "</span>"
     }
 
-    var value = view.getFloat32(0);
-    value = Math.round((value + Number.EPSILON) * 10000) / 10000
-    return "<span class='literal'>" + value + "</span>";
-};
-
-function byteArrayToLong(byteArray) {
-    var value = 0;
-    for ( var i = byteArray.length - 1; i >= 0; i--) {
-        value = (value * 256) + byteArray[i];
-    }
-
-    return "<span class='literal'>" + value + "</span>";
-};
-
-function getEventTargets(eventTargets, paramIndex, eventIndex){
-    console.log(eventTargets)
-    console.log(eventIndex)
-    console.log(eventTargets[eventIndex] )
-    if( eventTargets[eventIndex]["target"] == 0 ){
-        return "<span class='bool'>SELF</span>";
-    } else {
-        return "<span class='bool'>NULL</span>";
-    }
-}
-
-function getParentGameObject(gameObjects, index, param){
-    if( gameObjects[index].ownerOption == 1  ){
-        return "<span class='literal'>" + gameObjects[index].gameObject.name + "</span>"
-    } else {
-        return "<span class='bool'>NULL</span>"
-    }
-}
-
-function getGameObject(gameObjects, index, param){
-    return "<span class='literal'>" + gameObjects[index].name + "</span>"
-}
-
-function getAsciiString(byteArray, start, length){
-    var value = ""
-    var variable = false
-
-    while( byteArray[start] == 0 ){
-        start++
-        length--;
-    }
-    if( byteArray[start] == 1 ){
-        start++
-        length--
-        variable = true
-    }
-    console.log(byteArray.slice(start, start+length))
-    for( var i = start; i < start+length; i++ ){
-        value += String.fromCharCode(byteArray[i])
-    }
-    console.log(value)
-    if( variable ){
-        return "<span class='variable'>" + value + "</span>";
-    } else {
-        return "<span class='literal'>" + value + "</span>";
-    }
-}
-
-function updateInfo(str){
-    console.log(str)
-    infohead.innerHTML = str;
-    var fsm = FindState(str);
-
-    var string = "";
-    var actionNames = fsm.actionData.actionNames;
-    var str_params = fsm.actionData.fsmStringParams;
-
-    var eventTargets = fsm.actionData.fsmEventTargetParams;
-
-    var gameObjects = fsm.actionData.fsmGameObjectParams;
-    var childObjects = fsm.actionData.fsmOwnerDefaultParams;
-
-    var byteData = fsm.actionData.byteData
-    var paramDataType = fsm.actionData.paramDataType;
-    var paramName = fsm.actionData.paramName;
-    var paramDataPos = fsm.actionData.paramDataPos;
-    var paramByteDataSize = fsm.actionData.paramByteDataSize;
-
-    var arraySizeParam = fsm.actionData.arrayParamSizes;
-
-    var array_read = 0;
-    var child_read = 0;
-    var go_read = 0;
-    var events_read = 0;
-    var param_read = 0;
-    var str_read = 0;
-
-    for(var i = 0; i < actionNames.length; i++){
-       if( i < actionNames.length-1 ){
-            params = fsm.actionData.actionStartIndex[i+1] - fsm.actionData.actionStartIndex[i]
-            console.log(params)
-       } else {
-            params = fsm.actionData.paramDataPos.length - fsm.actionData.actionStartIndex[i]
-            console.log(params)
-       }
-
-       string += getMethod(actionNames[i])
-       string += "("
-
-       for( var j = 0; j < params; j++){
-            switch (paramDataType[param_read]){
-                case 1:
-                    string += byteArrayToBool( byteData.slice(paramDataPos[param_read], paramDataPos[param_read]+paramByteDataSize[param_read]) )
-                    param_read++;
-                    break;
-                case 15:
-                    string += byteArrayToFloat( byteData.slice(paramDataPos[param_read], paramDataPos[param_read]+paramByteDataSize[param_read]) )
-                    param_read++;
-                    break;
-                case 16:
-                    if( byteData[paramDataPos[param_read]+paramByteDataSize[param_read]-1] == 0 ){
-                        string += byteArrayToLong( byteData.slice(paramDataPos[param_read], paramDataPos[param_read]+paramByteDataSize[param_read]) )
-                    } else {
-                        string += getAsciiString(byteData, paramDataPos[param_read],paramByteDataSize[param_read]);
-                    }
-                    //string += byteArrayToFloat( byteData.slice(paramDataPos[param_read], paramDataPos[param_read]+paramByteDataSize[param_read]) )
-                    param_read++;
-                    break;
-                case 17:
-                    string += getAsciiString(byteData, paramDataPos[param_read],paramByteDataSize[param_read]);
-                    param_read++;
-                    break;
-                case 18:
-                    if(paramByteDataSize[param_read]==0){
-                        string += getString(str_params, str_read);
-                        str_read++;
-                    }
-                    else {
-                        string += getAsciiString(byteData, paramDataPos[param_read],paramByteDataSize[param_read]);
-                    }                    
-                    param_read++;
-                    break;
-                case 20:
-                    string += getParentGameObject( byteData, paramDataPos[param_read],paramByteDataSize[param_read]);
-                    param_read++
-                    break;
-                case 23:
-                    string += getAsciiString( byteData, paramDataPos[param_read],paramByteDataSize[param_read] );
-                    param_read++
-                    break;
-                case 28:
-                    string += getAsciiString(byteData, paramDataPos[param_read],paramByteDataSize[param_read]);
-                    //string += byteArrayToFloat( byteData.slice(paramDataPos[param_read], paramDataPos[param_read]+paramByteDataSize[param_read]) )
-                    param_read++;
-                    break;
-                default:
-                    string += byteArrayToLong( byteData.slice(paramDataPos[param_read], paramDataPos[param_read]+paramByteDataSize[param_read]) )
-                    param_read++;
-                    break;
-            }
-            string += ","
-       }
-       string = string.substring(0, string.length - 1);
-       string += ")</br>"
-
-        
-
-    }
-    info_actions.innerHTML = string;
-    var transitions_string = ""
-    for ( var i = 0; i < fsm.transitions.length; i++){
-        transitions_string += fsm.transitions[i].fsmEvent.name;
-        transitions_string += " => ";
-        transitions_string += fsm.transitions[i].toState;
-        transitions_string += "</br>";
-    }
-
-    info_transitions.innerHTML = transitions_string
-
-    var extra_str_param = ""
-    for( str_read; str_read < str_params.length; str_read++ ){
-        extra_str_param += str_params[str_read].value + "</br>";
-    }
-    var extra_params = ""
-    for( param_read; param_read < paramName.length; param_read++ ){
-        extra_params += paramName[param_read] + " | " + paramDataPos[param_read] + "|" + paramByteDataSize[param_read] + "|" + paramDataType[param_read] + "</br>";
-
-        extra_params += byteArrayToLong(byteData.slice(paramDataPos[param_read], paramDataPos[param_read] + paramByteDataSize[param_read])) + "</br>"
-
-    }
-    info_parameters.innerHTML = extra_str_param + extra_params;
-
-}
-
-function FindState(str){
-    var arr = fsm.states;
-    for( var i = 0; i < arr.length; i++){
-        var obj = arr[i];
-        if(obj.name == str){
-            return obj;
-        }
-    }
-}
-
-function createDiv(x, y, w, h, c, text){
-    var div = document.createElement("div");
-    document.body.appendChild(div);
-    
-    div.style.left = x + 'px'
-    div.style.top = y + 'px'
-    div.style.width = w + 'px'
-    div.style.height = h + 'px'
-    div.className = c;
-
-    div.onmouseover = function(){updateInfo(text)};
-
-    div.innerHTML = text;
-}
-
-function createLine(x, y, x2, y2, c, s){
-    var line = document.createElementNS("http://www.w3.org/2000/svg","line");
-    line.setAttribute("x1", x);
-    line.setAttribute("x2", x2);
-    line.setAttribute("y1", y);
-    line.setAttribute("y2", y2);
-    line.style.stroke = c;
-    line.style.strokeWidth = s;
-    svg.appendChild(line);
-}
-
-
-window.onload = function () { 
-    var svg = document.getElementById("svg");
-
-    var arr = fsm.states;
-    for( var i = 0; i < arr.length; i++){
-        var obj = arr[i]
-        createDiv(obj.position.x, obj.position.y, obj.position.width, obj.position.height, "fsmBox", obj.name);
-
-        var arr2 = obj.transitions;
-        for( var j = 0; j < arr2.length; j++){
-            obj2 = arr2[j];
-            var toState = obj2.toState;
-            var fsm_toState = FindState(toState);
-
-            if(fsm_toState != null){
-                createLine(obj.position.x+(obj.position.width/2), obj.position.y+(obj.position.height/2), fsm_toState.position.x+(fsm_toState.position.width/2),fsm_toState.position.y+(fsm_toState.position.height/2),"#F00","2px")
-
-
-            }
-
+    function getString(str_params, str_read) {
+        if (str_params[str_read].useVariable) {
+            return "<span class='variable'>" + str_params[str_read].name + "</span>"
+        } else {
+            return "<span class='literal'>" + str_params[str_read].value + "</span>"
         }
     }
 
+    function byteArrayToBool(byteArray) {
+        return "<span class='bool'>" + (byteArray[0] > 0).toString().toUpperCase() + "</span>"
+    }
+
+    function byteArrayToFloat(byteArray) {
+        const buf = new ArrayBuffer(4)
+        const view = new DataView(buf)
+
+        for (let i = 0; i < 4; i++) {
+            if (i >= byteArray.length) {
+                break
+            }
+
+            view.setUint8(3 - i, byteArray[i])
+        }
+
+        let value = view.getFloat32(0)
+        value = Math.round((value + Number.EPSILON) * 10000) / 10000
+        return "<span class='literal'>" + value + "</span>"
+    }
+
+    function byteArrayToLong(byteArray) {
+        let value = 0
+        for (let i = byteArray.length - 1; i >= 0; i--) {
+            value = (value * 256) + byteArray[i]
+        }
+
+        return "<span class='literal'>" + value + "</span>"
+    }
+
+    function getParentGameObject(gameObjects, index) {
+        if (gameObjects[index].ownerOption === 1) {
+            return "<span class='literal'>" + gameObjects[index].gameObject.name + "</span>"
+        } else {
+            return "<span class='bool'>NULL</span>"
+        }
+    }
+
+    function getAsciiString(byteArray, start, length) {
+        let value = ""
+        let variable = false
+
+        while (byteArray[start] === 0) {
+            start++
+            length--
+        }
+        if (byteArray[start] === 1) {
+            start++
+            length--
+            variable = true
+        }
+        for (let i = start; i < start + length; i++) {
+            value += String.fromCharCode(byteArray[i])
+        }
+        if (variable) {
+            return "<span class='variable'>" + value + "</span>"
+        } else {
+            return "<span class='literal'>" + value + "</span>"
+        }
+    }
+
+    function updateInfo(str) {
+        infohead.innerHTML = str
+        const fsm = FindState(str)
+
+        let string = ""
+        const actionNames = fsm.actionData.actionNames
+        const str_params = fsm.actionData.fsmStringParams
+
+        const byteData = fsm.actionData.byteData
+        const paramDataType = fsm.actionData.paramDataType
+        const paramName = fsm.actionData.paramName
+        const paramDataPos = fsm.actionData.paramDataPos
+        const paramByteDataSize = fsm.actionData.paramByteDataSize
+
+        let param_read = 0
+        let str_read = 0
+
+        let params
+        for (let i = 0; i < actionNames.length; i++) {
+            if (i < actionNames.length - 1) {
+                params = fsm.actionData.actionStartIndex[i + 1] - fsm.actionData.actionStartIndex[i]
+            } else {
+                params = fsm.actionData.paramDataPos.length - fsm.actionData.actionStartIndex[i]
+            }
+
+            string += getMethod(actionNames[i])
+            string += "("
+
+            for (let j = 0; j < params; j++) {
+                switch (paramDataType[param_read]) {
+                    case 1:
+                        string += byteArrayToBool(byteData.slice(paramDataPos[param_read], paramDataPos[param_read] + paramByteDataSize[param_read]))
+                        param_read++
+                        break
+                    case 15:
+                        string += byteArrayToFloat(byteData.slice(paramDataPos[param_read], paramDataPos[param_read] + paramByteDataSize[param_read]))
+                        param_read++
+                        break
+                    case 16:
+                        if (byteData[paramDataPos[param_read] + paramByteDataSize[param_read] - 1] === 0) {
+                            string += byteArrayToLong(byteData.slice(paramDataPos[param_read], paramDataPos[param_read] + paramByteDataSize[param_read]))
+                        } else {
+                            string += getAsciiString(byteData, paramDataPos[param_read], paramByteDataSize[param_read])
+                        }
+                        param_read++
+                        break
+                    case 17:
+                        string += getAsciiString(byteData, paramDataPos[param_read], paramByteDataSize[param_read])
+                        param_read++
+                        break
+                    case 18:
+                        if (paramByteDataSize[param_read] === 0) {
+                            string += getString(str_params, str_read)
+                            str_read++
+                        } else {
+                            string += getAsciiString(byteData, paramDataPos[param_read], paramByteDataSize[param_read])
+                        }
+                        param_read++
+                        break
+                    case 20:
+                        string += getParentGameObject(byteData, paramDataPos[param_read], paramByteDataSize[param_read])
+                        param_read++
+                        break
+                    case 23:
+                        string += getAsciiString(byteData, paramDataPos[param_read], paramByteDataSize[param_read])
+                        param_read++
+                        break
+                    case 28:
+                        string += getAsciiString(byteData, paramDataPos[param_read], paramByteDataSize[param_read])
+                        param_read++
+                        break
+                    default:
+                        string += byteArrayToLong(byteData.slice(paramDataPos[param_read], paramDataPos[param_read] + paramByteDataSize[param_read]))
+                        param_read++
+                        break
+                }
+                string += ","
+            }
+            string = string.substring(0, string.length - 1)
+            string += ")</br>"
 
 
-    //div.style.left = fsm_state.position.x + 'px'
-    //div.style.top = fsm_state.position.y + 'px'
-    //div.style.width = fsm_state.position.width + 'px'
-    //div.style.height = fsm_state.position.height + 'px'
-    //div.style.backgroundColor = "#333333"
-    //div.style.color = "#ababab"
-    //div.style.position = "absolute"
-    //div.innerHTML = fsm_state.name;
+        }
+        info_actions.innerHTML = string
+        let transitions_string = ""
+        for (let k = 0; k < fsm.transitions.length; k++) {
+            transitions_string += fsm.transitions[k].fsmEvent.name
+            transitions_string += " => "
+            transitions_string += fsm.transitions[k].toState
+            transitions_string += "</br>"
+        }
+
+        info_transitions.innerHTML = transitions_string
+
+        let extra_str_param = ""
+        for (str_read; str_read < str_params.length; str_read++) {
+            extra_str_param += str_params[str_read].value + "</br>"
+        }
+        let extra_params = ""
+        for (param_read; param_read < paramName.length; param_read++) {
+            extra_params += paramName[param_read] + " | " + paramDataPos[param_read] + "|" + paramByteDataSize[param_read] + "|" + paramDataType[param_read] + "</br>"
+
+            extra_params += byteArrayToLong(byteData.slice(paramDataPos[param_read], paramDataPos[param_read] + paramByteDataSize[param_read])) + "</br>"
+
+        }
+        info_parameters.innerHTML = extra_str_param + extra_params
+
+    }
+
+    function FindState(str) {
+        const arr = fsm.states
+        for (let i = 0; i < arr.length; i++) {
+            const obj = arr[i]
+            if (obj.name === str) {
+                return obj
+            }
+        }
+    }
+
+    function createDiv(x, y, w, h, c, text) {
+        const div = document.createElement("div")
+        document.body.appendChild(div)
+
+        div.style.left = x + 'px'
+        div.style.top = y + 'px'
+        div.style.width = w + 'px'
+        div.style.height = h + 'px'
+        div.className = c
+
+        div.onmouseover = function () {
+            updateInfo(text)
+        }
+
+        div.innerHTML = text
+    }
+
+    function createLine(x, y, x2, y2, c, s) {
+        const line = document.createElementNS("http://www.w3.org/2000/svg", "line")
+        line.setAttribute("x1", x)
+        line.setAttribute("x2", x2)
+        line.setAttribute("y1", y)
+        line.setAttribute("y2", y2)
+        line.style.stroke = c
+        line.style.strokeWidth = s
+        svg.appendChild(line)
+    }
 
 
+    window.onload = function () {
+        const arr = fsm.states
+        for (let i = 0; i < arr.length; i++) {
+            const obj = arr[i]
+            createDiv(obj.position.x, obj.position.y, obj.position.width, obj.position.height, "fsmBox", obj.name)
 
+            const arr2 = obj.transitions
+            for (let j = 0; j < arr2.length; j++) {
+                const obj2 = arr2[j]
+                const toState = obj2.toState
+                const fsm_toState = FindState(toState)
 
-}
-
-
+                if (fsm_toState != null) {
+                    createLine(obj.position.x + (obj.position.width / 2), obj.position.y + (obj.position.height / 2), fsm_toState.position.x + (fsm_toState.position.width / 2), fsm_toState.position.y + (fsm_toState.position.height / 2), "#F00", "2px")
+                }
+            }
+        }
+    }
 </script>
